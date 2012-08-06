@@ -2,12 +2,13 @@
 require 'spec/spec_helper'
   
 describe 'Metrics:' do
-  before(:each) { 
-    cleanup_db
-  }
+  describe "work data" do
+    before :each do
+      cleanup_db
+      start_slanger_with_mongo
+    end
 
-  with_mongo_slanger do
-    describe 'number of connections in work_data' do
+    describe 'number of connections' do
       it 'should reflect number of clients' do
         nb_connections_while = nil
 
@@ -98,19 +99,23 @@ describe 'Metrics:' do
         nb_messages.should eq(1)
       end
     end
-  
-    with_stale_metrics do
-      describe 'slanger' do
-        it 'should clean up old work data when starting' do
-          nb_connections_before = get_number_of_connections
-          # Give slanger time to start up
-          sleep 2
-          nb_connections_after = get_number_of_connections
-  
-          nb_connections_before.should eq(1)
-          nb_connections_after.should eq(0)
-        end
-      end
+  end 
+
+  describe "stale work data" do
+    before :each do
+      cleanup_db
+      insert_stale_metrics
+      @nb_connections_before = get_number_of_connections
+      start_slanger_with_mongo
+    end
+
+    it 'should be cleaned up when starting' do
+      # Give slanger time to start up
+      sleep 2
+      nb_connections_after = get_number_of_connections
+
+      @nb_connections_before.should eq(1)
+      nb_connections_after.should eq(0)
     end
   end
 end

@@ -1,7 +1,6 @@
 require 'fiber'
 require 'mongo'
 require 'net/http'
-require File.expand_path(File.dirname(__FILE__) + '/../slanger.rb')
 
 module SlangerHelperMethods
   def options()
@@ -27,7 +26,11 @@ module SlangerHelperMethods
     @server_pid = EM.fork_reactor do
       Thin::Logging.silent = true
       opts = options
+      # Fill configuration
+      require File.expand_path(File.dirname(__FILE__) + '/../lib/slanger/config.rb')
       Slanger::Config.load opts.merge(arg_options)
+      # Load Slanger
+      require File.expand_path(File.dirname(__FILE__) + '/../slanger.rb')
       # Fill with applications
       Fiber.new do
         Slanger::Application.create({
@@ -155,6 +158,14 @@ module SlangerHelperMethods
     end
   end
 
+  def insert_stale_metrics
+    metrics_work_data.update(
+      {app_id: 1},
+      {app_id: 1, connections: [{slanger_id: options[:slanger_id], peer: 'stale peer'}] },
+      upsert: true
+    )
+  end
+
   def get_number_of_connections()
     doc = metrics_work_data.find_one({app_id: 1})
     if doc then doc['connections'].count else nil end
@@ -223,39 +234,3 @@ module SlangerHelperMethods
     end
   end
 end
-
-def with_mongo_slanger(&block)
-  context "with Slanger using MongoDB, " do
-    before :each do
-      start_slanger_with_mongo
-    end
-
-    instance_eval &block
-  end
-end
-
-def with_poro_slanger(&block)
-  context "with Slanger using PORO, " do
-    before :each do
-      start_slanger
-    end
-
-    instance_eval &block
-  end
-end
-
-def with_stale_metrics(&block)
-  context "with stale metrics, " do
-    before :each do
-      metrics_work_data.update(
-        {app_id: 1},
-        {app_id: 1, connections: [{slanger_id: options['slanger_id'], peer: 'stale peer'}] },
-        upsert: true
-      )
-    end
-
-    instance_eval &block
-  end
-end
-
-

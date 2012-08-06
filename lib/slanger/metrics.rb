@@ -11,12 +11,21 @@ module Slanger
         end
       
         # Clean up our work data, in case we crashed previously. Of course it doesn't
-        # word if the node id has been randomly generated.
+        # work if the node id has been randomly generated.
         Logger.debug log_message("Cleaning stale word data")
-        work_data.update(
-          {},
-          {'$pull' => {connections: {slanger_id: Cluster.node_id}}}
-        )
+        Fiber.new do
+          resp = work_data.safe_update(
+            {},
+            {'$pull' => {connections: {slanger_id: Cluster.node_id}}}
+          )
+          resp.callback do |doc|
+            Logger.info "Cleaned up stale work data."
+          end
+          resp.errback do |err|
+            # Error during cleanup
+            Logger.error "Error when cleaning up stale work data: " + err.to_s
+          end
+        end.resume
       end
     end
 

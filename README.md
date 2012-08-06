@@ -114,6 +114,8 @@ Slanger supports several configuration options, which can be supplied as command
 
 -p or --private_key_file Private key file for SSL support. This argument is optional, if given, SSL will be enabled
 
+-b or --webhook_url URL for webhooks. This argument is optional, if given webhook callbacks will be made http://pusher.com/docs/webhooks
+
 -c or --cert_chain_file Certificate chain file for SSL support. This argument is optional, if given, SSL will be enabled
 
 -v or --[no-]verbose This makes Slanger run verbosely, meaning WebSocket frames will be echoed to STDOUT. Useful for debugging
@@ -157,10 +159,6 @@ Pusher is an awesome service, very reasonably priced, and run by an awesome crew
 
 - Stevie Graham
 
-# Author for Mongo database support, application metrics and REST API:
-
-- Gilbert Roulot for Tech-Angels
-
 # Core Team
 
 - Stevie Graham
@@ -172,6 +170,10 @@ Pusher is an awesome service, very reasonably priced, and run by an awesome crew
 - Mark Burns
 - Florian Gilcher
 - Claudio Poli
+
+Mongodb and metrics support:
+- Tech-Angels (Gilbert Roulot)
+
 
 &copy; 2011 a Stevie Graham joint.
 

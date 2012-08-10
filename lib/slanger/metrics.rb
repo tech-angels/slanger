@@ -88,6 +88,27 @@ module Slanger
       end
     end
 
+    # Retrieve fresh metrics from work_data
+    def get_metrics_data_for(app_id)
+      f = Fiber.current
+      resp = work_data.find_one('app_id' => app_id)
+      resp.callback do |doc|
+        f.resume doc
+      end
+      resp.errback do |err|
+        raise *err
+      end
+      doc = Fiber.yield
+      return {nb_connections: 0, nb_messages: 0} if doc.nil?
+      # count the number of connections
+      nb_connections = if doc['connections']
+        doc['connections'].count
+      else
+        0
+      end
+      {nb_connections: nb_connections, nb_messages: doc['nb_messages']}
+    end
+
     # Return the metrics for one application
     def get_metrics_for(app_id)
       f = Fiber.current

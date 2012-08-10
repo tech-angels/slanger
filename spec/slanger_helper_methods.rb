@@ -15,7 +15,6 @@ module SlangerHelperMethods
       mongo_host:          'localhost',
       mongo_port:          '27017',
       mongo_db:            'slanger_test',
-      metrics:             true,
       admin_http_user:     'admin',
       admin_http_password: 'secret',
     }
@@ -27,6 +26,7 @@ module SlangerHelperMethods
       Thin::Logging.silent = true
       opts = options
       # Fill configuration
+      require File.expand_path(File.dirname(__FILE__) + '/../lib/slanger/handler.rb')
       require File.expand_path(File.dirname(__FILE__) + '/../lib/slanger/config.rb')
       Slanger::Config.load opts.merge(arg_options)
       # Load Slanger
@@ -36,12 +36,16 @@ module SlangerHelperMethods
         Slanger::Application.create({
           app_id: 1,
           key: '765ec374ae0a69f4ce44',
-          secret: 'your-pusher-secret'
+          secret: 'your-pusher-secret',
+          connection_limit: 2,
+          nb_message_limit: 100,
         })
         Slanger::Application.create({
           app_id: 2,
           key: '23deadbeef99abababab',
-          secret: 'your-pusher-secret'
+          secret: 'your-pusher-secret',
+          connection_limit: 2,
+          nb_message_limit: 100,
         })
       end.resume 
       Slanger::Service.run
@@ -50,7 +54,7 @@ module SlangerHelperMethods
   end
 
   def start_slanger_with_mongo
-    start_slanger_with_options mongo: true
+    start_slanger_with_options mongo: true, metrics: true
   end
 
   alias start_slanger start_slanger_with_options
@@ -156,6 +160,14 @@ module SlangerHelperMethods
         collection.remove
       end
     end
+  end
+
+  def set_app_near_message_limit
+    metrics_work_data.update(
+      {app_id: 1},
+      {'$set' => {nb_messages: 99}},
+      {upsert: true}
+    )
   end
 
   def insert_stale_metrics

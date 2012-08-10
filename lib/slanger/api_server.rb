@@ -38,9 +38,16 @@ module Slanger
         Logger.error log_message("Signature authentication error.")
         raise
       end
-      f = Fiber.current
+      unless application.nb_message_limit.nil? or not Config.metrics
+        # Compare number of messages to the limit
+        metrics = Metrics::get_metrics_data_for(application.app_id)
+        if metrics && metrics[:nb_messages] && metrics[:nb_messages] >= application.nb_message_limit
+          return [403, {}, "403 NUMBER OF MESSAGES OVER LIMIT\n"]
+        end
+      end
       # Publish the event in Redis and translate the result into an HTTP
       # status to return to the client.
+      f = Fiber.current
       Slanger::Redis.publish(application.app_id.to_s + ":" + params[:channel_id], payload).tap do |r|
         r.callback {
           Logger.debug log_message("Successfully published to Redis.")

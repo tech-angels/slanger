@@ -41,9 +41,12 @@ describe 'Integration:' do
   end
 
   describe 'existing applications stored in mongodb' do
-    it 'should be retrieved and usable by Slanger' do
+    before :each do
+      cleanup_db
       start_slanger_with_mongo
-       
+    end
+
+    it 'should be retrieved and usable by Slanger' do
       messages = em_stream do |websocket, messages|
         case messages.length
         when 1
@@ -60,6 +63,32 @@ describe 'Integration:' do
 
       messages.should have_attributes connection_established: true, id_present: true,
         last_event: 'an_event', last_data: { some: "Mit Raben Und Wölfen" }.to_json
+    end
+
+    context "which are over their message limit" do
+      it 'shouldn\'t accept messages' do
+        # Set the app to 1 bellow limit
+        set_app_near_message_limit
+
+        status1 = nil
+        status2 = nil
+        messages = em_stream do |websocket, messages|
+          case messages.length
+          when 1
+            if messages[0]['event'] == 'pusher:error'
+              EM.stop
+            end
+            websocket.callback { websocket.send({ event: 'pusher:subscribe', data: { channel: 'MY_CHANNEL'} }.to_json) }
+          when 2
+            # This should work
+            Pusher['MY_CHANNEL'].trigger! 'an_event', { some: "Mit Raben Und Wölfen" }
+          when 3
+            # This should not
+            lambda {Pusher['MY_CHANNEL'].trigger! 'an_event', { some: "Aus dem vereisten Unterholz verschneiter Wälder" }}.should raise_error(Pusher::Error)
+            EM.stop
+          end
+        end
+      end
     end
   end
 end

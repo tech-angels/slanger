@@ -7,7 +7,7 @@ module Slanger
         # Invalid arguments
         raise(ArgumentError, "Hash must contain :app_id, :key and :secret. Hash was: " + attrs.to_s)
       end
-      unacceptable_attrs_keys = attrs.keys - (needed_attrs_keys + [:webhook_url])
+      unacceptable_attrs_keys = attrs.keys - (needed_attrs_keys + [:webhook_url, :connection_limit, :nb_message_limit])
       if unacceptable_attrs_keys.count > 0
         # Invalid arguments
         raise(ArgumentError, "Unknown attributes: " + unacceptable_attrs_keys.to_s)
@@ -32,7 +32,7 @@ module Slanger
 
     def self.create_new()
       app_id = new_id
-      app = application_implementation.new({app_id: app_id, key: nil, secret: nil, webhook_url: nil})
+      app = application_implementation.new({app_id: app_id, key: nil, secret: nil, webhook_url: nil, connection_limit: nil, nb_message_limit: nil})
       app.generate_new_token!
       app.save
       Logger.info "Created new application: " + app.app_id.to_s
@@ -54,7 +54,7 @@ module Slanger
 
     module Methods
       def to_json(options=nil)
-        {app_id: app_id, key: key, secret: secret, webhook_url: webhook_url}.to_json(options)
+        {app_id: app_id, key: key, secret: secret, webhook_url: webhook_url, connection_limit: connection_limit, nb_message_limit: nb_message_limit}.to_json(options)
       end
 
       def channels

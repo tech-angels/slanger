@@ -7,7 +7,7 @@ describe 'Integration:' do
     start_slanger_with_mongo
   end
 
-  describe 'limits on number of messages' do
+  describe 'limits on the number of messages' do
 
     it 'should be enforced for messages sent via the API' do
       # Set the app to 1 bellow limit
@@ -54,8 +54,6 @@ describe 'Integration:' do
               # Wait for 1 second then end the test
               EM.stop
             }
-          when 4
-            EM.next_tick { EM.stop }
           end
         end
 
@@ -74,6 +72,41 @@ describe 'Integration:' do
       client2_messages.none?  { |m| m['event'] == 'client-something' }.should be_true
       client2_messages.none?  { |m| m['event'] == 'client-something2' }.should be_true
     end
+  end
+  
+  describe 'limits on number of connections' do
+    it "should be enforced" do
+      client1_messages, client2_messages, client3_messages  = [], [], []
 
+      em_thread do
+        client1 = new_websocket
+        client2 = new_websocket
+        client3_messages, client2_messages, client1_messages = [], [], []
+        EM::Timer.new(1) do
+          client3 = new_websocket
+          stream(client3, client3_messages) do |message|
+            case client3_messages.length
+            when 1
+              EM.stop()
+            end
+          end
+        end
+
+        stream(client1, client1_messages) do |message|
+        end
+
+        stream(client2, client2_messages) do |message|
+        end
+    end
+
+
+
+      client1_messages.length.should eq 1
+      client2_messages.length.should eq 1
+      client3_messages.length.should eq 1
+      client1_messages.all? { |m| m['event'] == 'pusher:connection_established' }.should be_true
+      client2_messages.all? { |m| m['event'] == 'pusher:connection_established' }.should be_true
+      client3_messages.all? { |m| m['event'] == 'pusher:error' and m['data']['code'] == 4004 }.should be_true
+    end
   end
 end

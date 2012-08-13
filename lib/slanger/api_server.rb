@@ -102,6 +102,24 @@ module Slanger
       return [200, {}, metrics['value'].to_json]
     end
 
+    # PUT /applications/metrics/:app_id/reset_nb_messages.json - reset the message counter for an application.
+    put '/applications/metrics/:app_id/reset_nb_messages.json', :provides => :json do
+      content_type :json
+      protected!
+      app = Application.find_by_app_id(params[:app_id].to_i)
+      return [404, {}, "404 NOT FOUND\n"] if app.nil?
+      Metrics.reset_nb_messages_for(app.app_id)
+      status 204
+    end
+
+    # PUT /applications/metrics/reset_nb_messages.json - reset the message counter for all applications.
+    put '/applications/metrics/reset_nb_messages.json', :provides => :json do
+      content_type :json
+      protected!
+      Metrics.reset_nb_messages_for_all
+      status 204
+    end
+
     #################################
     # Application REST API
     #################################

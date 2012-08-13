@@ -39,7 +39,6 @@ module Slanger
         {'$inc' => {nb_messages: 1}, '$set' => {timestamp: Time.now.to_i}},
         {upsert: true}
       )
-      refresh_metrics()
     end
  
     def stop()
@@ -88,6 +87,27 @@ module Slanger
           {'$pull' => {connections: {slanger_id: Cluster.node_id, peer: peer}}, '$set' => {timestamp: Time.now.to_i}}
         )
       end
+    end
+
+    # Reset the message counter of all applications
+    def reset_nb_messages_for_all
+      return unless Config.metrics
+      # Update records
+      work_data.update(
+        {'$set' => {nb_messages: 0}, '$set' => {timestamp: Time.now.to_i}},
+        {upsert: true}
+      )
+    end
+
+    # Reset the message counter of an application
+    def reset_nb_messages_for(app_id)
+      return unless Config.metrics
+      # Update record
+      work_data.update(
+        {app_id: app_id},
+        {'$set' => {nb_messages: 0}, '$set' => {timestamp: Time.now.to_i}},
+        {upsert: true}
+      )
     end
 
     # Retrieve fresh metrics from work_data

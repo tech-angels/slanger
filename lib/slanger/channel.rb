@@ -49,9 +49,11 @@ module Slanger
     # are accepted. Public channels only get events from the API.
     def send_client_message(message)
       message['app_id'] = application.app_id
-      Slanger::Redis.publish(redis_channel, message.to_json) if authenticated?
-      Logger.debug log_message("Sent a client message: " + message.to_s)
-      Logger.audit log_message("Client message: " + message.to_s)
+      if authenticated?
+        Slanger::Redis.publish(redis_channel, message.to_json)
+        Logger.debug log_message("Sent a client message: " + message.to_s)
+        Logger.audit log_message("Client message: " + message.to_s)
+      end
     end
 
     # Send an event received from Redis to the EventMachine channel

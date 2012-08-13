@@ -38,9 +38,16 @@ module Slanger
         Logger.error log_message("Signature authentication error.")
         raise
       end
-      f = Fiber.current
+      unless application.nb_message_limit.nil? or not Config.metrics
+        # Compare number of messages to the limit
+        metrics = Metrics::get_metrics_data_for(application.app_id)
+        if metrics && metrics[:nb_messages] && metrics[:nb_messages] >= application.nb_message_limit
+          return [403, {}, "403 NUMBER OF MESSAGES OVER LIMIT\n"]
+        end
+      end
       # Publish the event in Redis and translate the result into an HTTP
       # status to return to the client.
+      f = Fiber.current
       Slanger::Redis.publish(application.app_id.to_s + ":" + params[:channel_id], payload).tap do |r|
         r.callback {
           Logger.debug log_message("Successfully published to Redis.")
@@ -93,6 +100,24 @@ module Slanger
 
       return [404, {}, "404 NOT FOUND\n"] if metrics.nil?
       return [200, {}, metrics['value'].to_json]
+    end
+
+    # PUT /applications/metrics/:app_id/reset_nb_messages.json - reset the message counter for an application.
+    put '/applications/metrics/:app_id/reset_nb_messages.json', :provides => :json do
+      content_type :json
+      protected!
+      app = Application.find_by_app_id(params[:app_id].to_i)
+      return [404, {}, "404 NOT FOUND\n"] if app.nil?
+      Metrics.reset_nb_messages_for(app.app_id)
+      status 204
+    end
+
+    # PUT /applications/metrics/reset_nb_messages.json - reset the message counter for all applications.
+    put '/applications/metrics/reset_nb_messages.json', :provides => :json do
+      content_type :json
+      protected!
+      Metrics.reset_nb_messages_for_all
+      status 204
     end
 
     #################################

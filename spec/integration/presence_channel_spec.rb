@@ -152,5 +152,37 @@ describe 'Integration' do
         end
       end
     end
+
+    describe 'client events' do
+      it "sends event to other channel subscribers" do
+        client1_messages, client2_messages  = [], []
+
+        em_thread do
+          client1, client2 = new_websocket, new_websocket
+          client2_messages, client1_messages = [], []
+
+          stream(client1, client1_messages) do |message|
+            case client1_messages.length
+            when 1
+              private_channel client1, client1_messages.first
+            when 3
+              EM.next_tick { EM.stop }
+            end
+          end
+
+          stream(client2, client2_messages) do |message|
+            case client2_messages.length
+            when 1
+              private_channel client2, client2_messages.first
+            when 2
+              client2.send({ event: 'client-something', data: { some: 'stuff' }, channel: 'private-channel' }.to_json)
+            end
+          end
+        end
+
+        client1_messages.one? { |m| m['event'] == 'client-something' }.should be_true
+        client2_messages.none?  { |m| m['event'] == 'client-something' }.should be_true
+      end
+    end
   end
 end

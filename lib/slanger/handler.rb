@@ -18,7 +18,7 @@ module Slanger
       @peername      = socket.get_peername
       @connection    = Connection.new(@socket)
       @subscriptions = {}
-      authenticate
+      check_limits and authenticate
     end
 
     # Dispatches message handling to method with same name as
@@ -53,6 +53,24 @@ module Slanger
       Logger.debug log_message("Closed connection.")
       Metrics.connection_closed(self)
     end
+
+    def check_limits
+      # If the application is nil, let authenticate take care of rejecting it
+      return true if application.nil?
+      # If application doesn't have a limit or metrics are not running, accept
+      return true if application.connection_limit.nil? or not Config.metrics
+      # Compare number of connections to the limit
+      metrics = Metrics::get_metrics_data_for(application.app_id)
+      if metrics && metrics[:nb_connections] && metrics[:nb_connections] >= application.connection_limit
+        Logger.error log_message("Application is over the limit of number of connections.")
+        error({ code: 4004, message: "Application is over the limit of number of connections." })
+        @socket.close_websocket
+        false
+      else
+        true
+      end
+    end 
+
 
     def authenticate
       if valid_app_key? app_key

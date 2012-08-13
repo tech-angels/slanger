@@ -8,19 +8,23 @@ module Slanger
     attr_accessor :key
     attr_accessor :secret
     attr_accessor :webhook_url
+    attr_accessor :connection_limit
+    attr_accessor :nb_message_limit
 
     def initialize(attrs)
       @app_id = attrs[:app_id]
       @key = attrs[:key]
       @secret = attrs[:secret]
       @webhook_url = attrs[:webhook_url]
+      @connection_limit = attrs[:connection_limit]
+      @nb_message_limit = attrs[:nb_message_limit]
     end
 
     def save()
       f = Fiber.current
       resp = self.class.applications.safe_update(
         {'_id' => app_id},
-        {'_id' => app_id, key: key, secret: secret, webhook_url: webhook_url},
+        {'_id' => app_id, key: key, secret: secret, webhook_url: webhook_url, connection_limit: connection_limit, nb_message_limit: nb_message_limit},
         {upsert: true}
       )
       resp.callback do |doc|
@@ -124,7 +128,9 @@ module Slanger
         app_id: doc['_id'],
         key:    doc['key'],
         secret: doc['secret'],
-        webhook_url: doc['webhook_url']
+        webhook_url: doc['webhook_url'],
+        connection_limit: doc['connection_limit'],
+        nb_message_limit: doc['nb_message_limit']
       })
       self.cache(app)
       app
@@ -149,7 +155,9 @@ module Slanger
           app_id: doc['_id'],
           key:    doc['key'],
           secret: doc['secret'],
-          webhook_url: doc['webhook_url']
+          webhook_url: doc['webhook_url'],
+          connection_limit: doc['connection_limit'],
+          nb_message_limit: doc['nb_message_limit']
         })
       end
     end

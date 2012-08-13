@@ -3,7 +3,7 @@ module Slanger
 
     def self.extended(base)
       # Initialisation
-      if Config::metrics
+      if Config.metrics
         Logger.debug log_message("Initializing metrics")
         # Starts up a periodic timer in eventmachine to calculate the metrics every minutes
         EventMachine::PeriodicTimer.new(60) do
@@ -32,18 +32,17 @@ module Slanger
     # Increment the number of message for an application each time a message is dispatched into one
     # of its channels
     def sent_message(application)
+      return unless Config.metrics
       # Update record
       work_data.update(
         {app_id: application.app_id},
         {'$inc' => {nb_messages: 1}, '$set' => {timestamp: Time.now.to_i}},
         {upsert: true}
       )
-      refresh_metrics()
     end
  
     def stop()
       return unless Config.metrics
-
       # Remove all connexions before slanger stops
       f = Fiber.current
       Logger.debug log_message("Removing connections from DB before stop.")
@@ -64,6 +63,7 @@ module Slanger
  
     # Add new connections to an application to its list
     def new_connection(handler)
+      return unless Config.metrics
       unless handler.application.nil?
         # Get peer's IP and port
         peer = handler.peer_ip_port()
@@ -78,6 +78,7 @@ module Slanger
  
     # Remove connexions when it is closed
     def connection_closed(handler)
+      return unless Config.metrics
       peer = handler.peer_ip_port()
       unless handler.application.nil? or peer.nil?
         # Update record
@@ -88,8 +89,52 @@ module Slanger
       end
     end
 
+    # Reset the message counter of all applications
+    def reset_nb_messages_for_all
+      return unless Config.metrics
+      # Update records
+      work_data.update(
+        {'$set' => {nb_messages: 0}, '$set' => {timestamp: Time.now.to_i}},
+        {upsert: true}
+      )
+    end
+
+    # Reset the message counter of an application
+    def reset_nb_messages_for(app_id)
+      return unless Config.metrics
+      # Update record
+      work_data.update(
+        {app_id: app_id},
+        {'$set' => {nb_messages: 0}, '$set' => {timestamp: Time.now.to_i}},
+        {upsert: true}
+      )
+    end
+
+    # Retrieve fresh metrics from work_data
+    def get_metrics_data_for(app_id)
+      return nil unless Config.metrics
+      f = Fiber.current
+      resp = work_data.find_one('app_id' => app_id)
+      resp.callback do |doc|
+        f.resume doc
+      end
+      resp.errback do |err|
+        raise *err
+      end
+      doc = Fiber.yield
+      return {nb_connections: 0, nb_messages: 0} if doc.nil?
+      # count the number of connections
+      nb_connections = if doc['connections']
+        doc['connections'].count
+      else
+        0
+      end
+      {nb_connections: nb_connections, nb_messages: doc['nb_messages']}
+    end
+
     # Return the metrics for one application
     def get_metrics_for(app_id)
+      return nil unless Config.metrics
       f = Fiber.current
       resp = metrics.find_one('_id' => app_id)
       resp.callback do |doc|
@@ -106,6 +151,7 @@ module Slanger
  
     # Return the metrics for all applications
     def get_all_metrics()
+      return nil unless Config.metrics
       f = Fiber.current
       resp = metrics.find().defer_as_a
       resp.callback do |doc|
@@ -124,6 +170,7 @@ module Slanger
     # Run a MapReduce query to fill the slanger metrics collection from data
     def refresh_metrics()
       # Only run this on the master
+      return unless Config.metrics
       return if not Cluster.is_master?
       Fiber.new {
         Logger.debug log_message("Calculating metrics.")

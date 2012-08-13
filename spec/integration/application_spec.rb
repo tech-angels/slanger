@@ -41,9 +41,12 @@ describe 'Integration:' do
   end
 
   describe 'existing applications stored in mongodb' do
-    it 'should be retrieved and usable by Slanger' do
+    before :each do
+      cleanup_db
       start_slanger_with_mongo
-       
+    end
+
+    it 'should be retrieved and usable by Slanger' do
       messages = em_stream do |websocket, messages|
         case messages.length
         when 1

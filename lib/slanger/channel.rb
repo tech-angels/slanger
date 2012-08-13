@@ -49,9 +49,11 @@ module Slanger
     # are accepted. Public channels only get events from the API.
     def send_client_message(message)
       message['app_id'] = application.app_id
-      Slanger::Redis.publish(redis_channel, message.to_json) if authenticated?
-      Logger.debug log_message("Sent a client message: " + message.to_s)
-      Logger.audit log_message("Client message: " + message.to_s)
+      if authenticated? and not over_message_limit?
+        Slanger::Redis.publish(redis_channel, message.to_json)
+        Logger.debug log_message("Sent a client message: " + message.to_s)
+        Logger.audit log_message("Client message: " + message.to_s)
+      end
     end
 
     # Send an event received from Redis to the EventMachine channel
@@ -68,6 +70,13 @@ module Slanger
     def authenticated?
       channel_id =~ /^private-/ || channel_id =~ /^presence-/
     end
+
+    def over_message_limit?
+      return false if application.nb_message_limit.nil? or not Config.metrics
+      # Compare number of messages to the limit
+      metrics = Metrics::get_metrics_data_for(application.app_id)
+      return metrics && metrics[:nb_messages] && metrics[:nb_messages] >= application.nb_message_limit
+    end 
 
     def redis_channel
       # Prefixes the channel_id with the application id in Redis so that two

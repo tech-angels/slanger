@@ -82,8 +82,6 @@ describe 'Metrics:' do
   
     describe 'number of messages' do
       it 'should increase as messages are received' do
-        nb_message = nil
-
         messages = em_stream do |websocket, messages|
           case messages.length
           when 1
@@ -97,6 +95,44 @@ describe 'Metrics:' do
         nb_messages = get_number_of_messages
   
         nb_messages.should eq(1)
+      end
+
+      it 'should be resetable for all applications' do
+        messages = em_stream do |websocket, messages|
+          case messages.length
+          when 1
+            websocket.callback { websocket.send({ event: 'pusher:subscribe', data: { channel: 'MY_CHANNEL'} }.to_json) }
+          when 2
+            Pusher['MY_CHANNEL'].trigger_async 'an_event', { some: "Mit Raben Und Wölfen" }
+          when 3
+            EM.stop
+          end
+        end
+        nb_messages_before_reset = get_number_of_messages
+        rest_api_put('/applications/metrics/reset_nb_messages.json')
+        nb_messages_after_reset = get_number_of_messages
+  
+        nb_messages_before_reset.should eq(1)
+        nb_messages_after_reset.should eq(1)
+      end
+ 
+      it 'should be resetable for a given application' do
+        messages = em_stream do |websocket, messages|
+          case messages.length
+          when 1
+            websocket.callback { websocket.send({ event: 'pusher:subscribe', data: { channel: 'MY_CHANNEL'} }.to_json) }
+          when 2
+            Pusher['MY_CHANNEL'].trigger_async 'an_event', { some: "Mit Raben Und Wölfen" }
+          when 3
+            EM.stop
+          end
+        end
+        nb_messages_before_reset = get_number_of_messages
+        rest_api_put('/applications/metrics/1/reset_nb_messages.json')
+        nb_messages_after_reset = get_number_of_messages
+  
+        nb_messages_before_reset.should eq(1)
+        nb_messages_after_reset.should eq(1)
       end
     end
   end 

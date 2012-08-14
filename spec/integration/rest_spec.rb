@@ -136,6 +136,47 @@ describe 'REST API:' do
         app_after_change['webhook_url'].should eq "http://example.com/hook"
         change_response.code.should eq "204" 
       end
+
+      it 'and can have their nb_message_limit changed via the API' do
+        # change app webhook
+        changed_app = @created_app.clone()
+        changed_app['nb_message_limit'] = 5
+        change_response = rest_api_put("/applications/#{@created_app['id']}.json", {application: changed_app}.to_json)
+
+        # get it again
+        response = rest_api_get("/applications/#{@created_app['id']}.json")
+        app_after_change = JSON::parse(response.body)
+ 
+        @created_app['id'].should_not be_nil
+        @created_app['id'].should eq app_after_change['id']
+        @created_app['key'].should_not be_nil
+        @created_app['key'].should eq app_after_change['key']
+        @created_app['secret'].should_not be_nil
+        @created_app['secret'].should eq app_after_change['secret']
+        app_after_change['nb_message_limit'].should eq 5
+        change_response.code.should eq "204" 
+      end
+ 
+      it 'and can have their connectionn_limit changed via the API' do
+        # change app webhook
+        changed_app = @created_app.clone()
+        changed_app['connection_limit'] = 5
+        change_response = rest_api_put("/applications/#{@created_app['id']}.json", {application: changed_app}.to_json)
+
+        # get it again
+        response = rest_api_get("/applications/#{@created_app['id']}.json")
+        app_after_change = JSON::parse(response.body)
+ 
+        @created_app['id'].should_not be_nil
+        @created_app['id'].should eq app_after_change['id']
+        @created_app['key'].should_not be_nil
+        @created_app['key'].should eq app_after_change['key']
+        @created_app['secret'].should_not be_nil
+        @created_app['secret'].should eq app_after_change['secret']
+        app_after_change['connection_limit'].should eq 5
+        change_response.code.should eq "204" 
+      end
+ 
     end
   end
 end

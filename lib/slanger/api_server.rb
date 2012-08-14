@@ -184,6 +184,14 @@ module Slanger
           # Modify the webhook URL
           app.webhook_url = data['webhook_url']
         end
+        if data['nb_message_limit'].to_i != app.nb_message_limit
+          # Modify the limit on the number of messages
+          app.nb_message_limit = data['nb_message_limit'].to_i
+        end
+        if data['connection_limit'].to_i != app.connection_limit
+          # Modify the limit on the number of messages
+          app.connection_limit = data['connection_limit'].to_i
+        end
       rescue JSON::ParserError
         return [400, {}, "Invalid JSON data\n"]        
       end
@@ -203,7 +211,7 @@ module Slanger
 
     # Change app_id into id in REST results to play well with Activeresource
     def map_id(app)
-      {id: app.app_id, key: app.key, secret: app.secret, webhook_url: app.webhook_url}
+      {id: app.app_id, key: app.key, secret: app.secret, webhook_url: app.webhook_url, nb_message_limit: app.nb_message_limit, connection_limit: app.connection_limit}
     end
 
     # Authenticate requests

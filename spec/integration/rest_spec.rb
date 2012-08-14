@@ -83,7 +83,7 @@ describe 'REST API:' do
         # change app key
         changed_app = @created_app.clone()
         changed_app['key'] = "changedkey"
-        change_response = rest_api_put("/applications/#{@created_app['id']}.json", changed_app.to_json)
+        change_response = rest_api_put("/applications/#{@created_app['id']}.json", {application: changed_app}.to_json)
 
         # get it again
         response = rest_api_get("/applications/#{@created_app['id']}.json")
@@ -102,7 +102,7 @@ describe 'REST API:' do
         # change app secret
         changed_app = @created_app.clone()
         changed_app['secret'] = "changedsecret"
-        change_response = rest_api_put("/applications/#{@created_app['id']}.json", changed_app.to_json)
+        change_response = rest_api_put("/applications/#{@created_app['id']}.json", {application: changed_app}.to_json)
 
         # get it again
         response = rest_api_get("/applications/#{@created_app['id']}.json")
@@ -121,7 +121,7 @@ describe 'REST API:' do
         # change app webhook
         changed_app = @created_app.clone()
         changed_app['webhook_url'] = "http://example.com/hook"
-        change_response = rest_api_put("/applications/#{@created_app['id']}.json", changed_app.to_json)
+        change_response = rest_api_put("/applications/#{@created_app['id']}.json", {application: changed_app}.to_json)
 
         # get it again
         response = rest_api_get("/applications/#{@created_app['id']}.json")

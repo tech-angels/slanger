@@ -169,10 +169,17 @@ module Slanger
       app = Application.find_by_app_id(params[:app_id].to_i)
       return [404, {}, "404 NOT FOUND\n"] if app.nil?
       begin
-        data = JSON.parse(request.body.string)
+        data = JSON.parse(request.body.string)['application']
+        return [400, {}, "Invalid format\n"] if data.nil?
         # Disallows changing the key
-        return [403, {}, "Modification of the key is forbidden\n"] if data['key'] != app.key
-        return [403, {}, "Modification of the secret is forbidden\n"] if data['secret'] != app.secret
+        if data['key'] != app.key
+          Logger.error log_message('Attempt to change the key via a PUT request.')
+          return [403, {}, "Modification of the key is forbidden\n"] if data['key'] != app.key
+        end
+        if data['secret'] != app.secret
+          Logger.error log_message('Attempt to change the secret via a PUT request.')
+          return [403, {}, "Modification of the secret is forbidden\n"] if data['secret'] != app.secret
+        end
         if data['webhook_url'] != app.webhook_url
           # Modify the webhook URL
           app.webhook_url = data['webhook_url']

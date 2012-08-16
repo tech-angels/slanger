@@ -49,15 +49,16 @@ module Slanger
       Logger.debug log_message("Removing connections from DB before stop.")
       resp = work_data.safe_update(
         {},
-        {'$pull' => {connections: {slanger_id: Cluster.node_id}}, '$set' => {timestamp: Time.now.to_i}}
+        {'$pull' => {connections: {slanger_id: Cluster.node_id}}, '$set' => {timestamp: Time.now.to_i}},
+        multi: true
       )
       resp.callback do |doc|
-        f.resume doc
+        f.resume
       end
       resp.errback do |err|
         # Error during save
         Logger.error "Error when cleaning up work data: " + err.to_s
-        f.resume nil
+        f.resume
       end
       Fiber.yield
     end
@@ -94,10 +95,21 @@ module Slanger
     def reset_nb_messages_for_all
       return unless Config.metrics
       # Update records
-      work_data.update(
-        {'$set' => {nb_messages: 0}, '$set' => {timestamp: Time.now.to_i}},
-        {upsert: true}
+      f = Fiber.current
+      resp = work_data.safe_update(
+        {},
+        {'$set' => {nb_messages: 0, timestamp: Time.now.to_i}},
+        {multi: true}
       )
+      resp.callback do |doc|
+        Logger.info "Reset nb_messages in metrics for all applications."
+        f.resume
+      end
+      resp.errback do |err|
+        Logger.error "Failed to reset nb_messages in metrics for all applications: " + err.to_s
+        f.resume
+      end
+      Fiber.yield
     end
 
     # Reset the message counter of an application
@@ -106,7 +118,7 @@ module Slanger
       # Update record
       work_data.update(
         {app_id: app_id},
-        {'$set' => {nb_messages: 0}, '$set' => {timestamp: Time.now.to_i}},
+        {'$set' => {nb_messages: 0, timestamp: Time.now.to_i}},
         {upsert: true}
       )
     end

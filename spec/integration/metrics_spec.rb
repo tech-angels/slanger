@@ -54,9 +54,11 @@ describe 'Metrics:' do
       end
   
       it 'should be zero when slanger is killed' do
-        nb_connections_while = nil 
-        nb_connections_after = nil
-  
+        nb_connections_while1 = nil 
+        nb_connections_while2 = nil 
+        nb_connections_after1 = nil
+        nb_connections_after2 = nil
+
         messages = em_stream do |websocket, messages|
           case messages.length
           when 1
@@ -65,18 +67,25 @@ describe 'Metrics:' do
             end
             websocket.callback { websocket.send({ event: 'pusher:subscribe', data: { channel: 'MY_CHANNEL'} }.to_json) }
           when 2
-            nb_connections_while = get_number_of_connections(1)
+            # Insert data in the metric work data with 1 connection
+            # to apps 1 and 2
+            insert_stale_metrics
+            nb_connections_while1 = get_number_of_connections(1)
+            nb_connections_while2 = get_number_of_connections(2)
             kill_slanger
             timer = EventMachine::Timer.new(2) do
               # get number of connection before quitting. If slanger was still running it would be 1
-              nb_connections_after = get_number_of_connections(1)
+              nb_connections_after1 = get_number_of_connections(1)
+              nb_connections_after2 = get_number_of_connections(2)
               EM.stop
             end
           end
         end
   
-        nb_connections_while.should eq(1)
-        nb_connections_after.should eq(0)
+        nb_connections_while1.should eq(1)
+        nb_connections_while2.should eq(1)
+        nb_connections_after1.should eq(0)
+        nb_connections_after2.should eq(0)
       end
     end
   
@@ -92,7 +101,7 @@ describe 'Metrics:' do
             EM.stop
           end
         end
-        nb_messages = get_number_of_messages
+        nb_messages = get_number_of_messages(1)
   
         nb_messages.should eq(1)
       end
@@ -101,19 +110,21 @@ describe 'Metrics:' do
         messages = em_stream do |websocket, messages|
           case messages.length
           when 1
-            websocket.callback { websocket.send({ event: 'pusher:subscribe', data: { channel: 'MY_CHANNEL'} }.to_json) }
-          when 2
-            Pusher['MY_CHANNEL'].trigger_async 'an_event', { some: "Mit Raben Und Wölfen" }
-          when 3
             EM.stop
           end
         end
-        nb_messages_before_reset = get_number_of_messages
+        increase_nb_messages
+        nb_messages_before_reset1 = get_number_of_messages(1)
+        nb_messages_before_reset2 = get_number_of_messages(2)
         rest_api_put('/applications/metrics/reset_nb_messages.json')
-        nb_messages_after_reset = get_number_of_messages
+sleep(5)
+        nb_messages_after_reset1 = get_number_of_messages(1)
+        nb_messages_after_reset2 = get_number_of_messages(2)
   
-        nb_messages_before_reset.should eq(1)
-        nb_messages_after_reset.should eq(1)
+        nb_messages_before_reset1.should eq(23)
+        nb_messages_before_reset2.should eq(23)
+        nb_messages_after_reset1.should eq(0)
+        nb_messages_after_reset2.should eq(0)
       end
  
       it 'should be resetable for a given application' do
@@ -127,12 +138,12 @@ describe 'Metrics:' do
             EM.stop
           end
         end
-        nb_messages_before_reset = get_number_of_messages
+        nb_messages_before_reset = get_number_of_messages(1)
         rest_api_put('/applications/metrics/1/reset_nb_messages.json')
-        nb_messages_after_reset = get_number_of_messages
+        nb_messages_after_reset = get_number_of_messages(1)
   
         nb_messages_before_reset.should eq(1)
-        nb_messages_after_reset.should eq(1)
+        nb_messages_after_reset.should eq(0)
       end
     end
   end 

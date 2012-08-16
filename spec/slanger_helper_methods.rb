@@ -183,13 +183,26 @@ module SlangerHelperMethods
     )
   end
 
+  def increase_nb_messages
+    metrics_work_data.update(
+      {app_id: 1},
+      {app_id: 1, nb_messages: 23 },
+      upsert: true
+    )
+    metrics_work_data.update(
+      {app_id: 2},
+      {app_id: 2, nb_messages: 23 },
+      upsert: true
+    )
+  end
+
   def get_number_of_connections(app_id)
     doc = metrics_work_data.find_one({app_id: app_id})
     if doc then doc['connections'].count else nil end
   end
 
-  def get_number_of_messages()
-    doc = metrics_work_data.find_one({app_id: 1})
+  def get_number_of_messages(app_id)
+    doc = metrics_work_data.find_one({app_id: app_id})
     doc['nb_messages']
   end
 

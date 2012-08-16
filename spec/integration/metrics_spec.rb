@@ -20,7 +20,7 @@ describe 'Metrics:' do
             end
             websocket.callback { websocket.send({ event: 'pusher:subscribe', data: { channel: 'MY_CHANNEL'} }.to_json) }
           when 2
-            nb_connections_while = get_number_of_connections
+            nb_connections_while = get_number_of_connections(1)
             EM.stop
           end
         end
@@ -40,14 +40,14 @@ describe 'Metrics:' do
             end
             websocket.callback { websocket.send({ event: 'pusher:subscribe', data: { channel: 'MY_CHANNEL'} }.to_json) }
           when 2
-            nb_connections_while = get_number_of_connections
+            nb_connections_while = get_number_of_connections(1)
             EM.stop
           end
         end
   
         # Give slanger the chance to run before checking the number of connections again
         sleep 2
-        nb_connections_after = get_number_of_connections
+        nb_connections_after = get_number_of_connections(1)
   
         nb_connections_while.should eq(1)
         nb_connections_after.should eq(0)
@@ -65,11 +65,11 @@ describe 'Metrics:' do
             end
             websocket.callback { websocket.send({ event: 'pusher:subscribe', data: { channel: 'MY_CHANNEL'} }.to_json) }
           when 2
-            nb_connections_while = get_number_of_connections
+            nb_connections_while = get_number_of_connections(1)
             kill_slanger
             timer = EventMachine::Timer.new(2) do
               # get number of connection before quitting. If slanger was still running it would be 1
-              nb_connections_after = get_number_of_connections
+              nb_connections_after = get_number_of_connections(1)
               EM.stop
             end
           end
@@ -138,20 +138,21 @@ describe 'Metrics:' do
   end 
 
   describe "stale work data" do
-    before :each do
+    it 'should be cleaned up when starting' do
       cleanup_db
       insert_stale_metrics
-      @nb_connections_before = get_number_of_connections
+      nb_connections_before1 = get_number_of_connections(1)
+      nb_connections_before2 = get_number_of_connections(2)
       start_slanger_with_mongo
-    end
-
-    it 'should be cleaned up when starting' do
       # Give slanger time to start up
       sleep 2
-      nb_connections_after = get_number_of_connections
+      nb_connections_after1 = get_number_of_connections(1)
+      nb_connections_after2 = get_number_of_connections(2)
 
-      @nb_connections_before.should eq(1)
-      nb_connections_after.should eq(0)
+      nb_connections_before1.should eq(1)
+      nb_connections_before2.should eq(1)
+      nb_connections_after1.should eq(0)
+      nb_connections_after2.should eq(0)
     end
   end
 end

@@ -176,10 +176,15 @@ module SlangerHelperMethods
       {app_id: 1, connections: [{slanger_id: options[:slanger_id], peer: 'stale peer'}] },
       upsert: true
     )
+    metrics_work_data.update(
+      {app_id: 2},
+      {app_id: 2, connections: [{slanger_id: options[:slanger_id], peer: 'stale peer 2'}] },
+      upsert: true
+    )
   end
 
-  def get_number_of_connections()
-    doc = metrics_work_data.find_one({app_id: 1})
+  def get_number_of_connections(app_id)
+    doc = metrics_work_data.find_one({app_id: app_id})
     if doc then doc['connections'].count else nil end
   end
 

@@ -57,6 +57,10 @@ OptionParser.new do |opts|
     options[:websocket_host], options[:websocket_port] = p.split(':')
   end
 
+  opts.on '--flash-policy-host HOST', "Additional address to serve flash policy files on when using SSL (Optionnal)" do |p|
+    options[:flash_policy_host], options[:flash_policy_port] = p.split(':')
+  end
+
   opts.on '-i', '--require FILE', "Require a file before starting Slanger" do |p|
     options[:require] ||= []
     options[:require] << p

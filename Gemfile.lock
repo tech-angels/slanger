@@ -7,7 +7,7 @@ PATH
       em-hiredis (~> 0.1.0)
       em-http-request (~> 0.3.0)
       em-mongo (~> 0.4.2)
-      em-websocket (~> 0.3.5)
+      em-websocket (~> 0.3.8)
       eventmachine (~> 0.12.10)
       glamazon (~> 0.3.1)
       json (~> 1.7.7)
@@ -76,6 +76,7 @@ GEM
     rspec-expectations (2.6.0)
       diff-lcs (~> 1.1.2)
     rspec-mocks (2.6.0)
+    ruby-prof (0.12.1)
     signature (0.1.6)
     sinatra (1.2.8)
       rack (~> 1.1)
@@ -101,6 +102,7 @@ DEPENDENCIES
   pusher (~> 0.9.3)
   rake
   rspec (~> 2.6.0)
+  ruby-prof
   slanger!
   timecop (~> 0.3.5)
   webmock (~> 1.8.7)

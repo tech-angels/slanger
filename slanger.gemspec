@@ -14,7 +14,7 @@ Gem::Specification.new do |s|
   s.add_dependency                'json',             '~> 1.7.7'
   s.add_dependency                'eventmachine',     '~> 0.12.10'
   s.add_dependency                'em-hiredis',       '~> 0.1.0'
-  s.add_dependency                'em-websocket',     '~> 0.3.5'
+  s.add_dependency                'em-websocket',     '~> 0.3.8'
   s.add_dependency                'rack',             '~> 1.3.3'
   s.add_dependency                'rack-fiber_pool',  '0.9.1'
   s.add_dependency                'signature',        '~> 0.1.3'
@@ -34,6 +34,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency    'timecop',          '~> 0.3.5'
   s.add_development_dependency    'webmock',          '~> 1.8.7'
   s.add_development_dependency    'mocha',            '~> 0.12.0'
+  s.add_development_dependency    'ruby-prof'
 
   s.files                       = Dir['README.md', 'lib/**/*', 'slanger.rb']
   s.require_path                = '.'

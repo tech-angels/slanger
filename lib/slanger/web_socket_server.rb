@@ -27,6 +27,11 @@ module Slanger
           ws.onmessage     { |msg| Fiber.new do ws.connection_handler.onmessage msg end.resume }
           ws.onclose       { Fiber.new do ws.connection_handler.onclose end.resume }
         end
+
+        # Start a flash policy server
+        if Slanger::Config[:flash_policy_host]
+          EM::start_server(Slanger::Config[:flash_policy_host], Slanger::Config[:flash_policy_port], FlashPolicyServer)
+        end
       end
     end
     extend self

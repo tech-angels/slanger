@@ -11,6 +11,7 @@ Gem::Specification.new do |s|
   s.email                       = 'sjtgraham@mac.com'
   s.homepage                    = 'http://github.com/stevegraham/slanger'
 
+  s.add_dependency                'json',             '~> 1.7.7'
   s.add_dependency                'eventmachine',     '~> 0.12.10'
   s.add_dependency                'em-hiredis',       '~> 0.1.0'
   s.add_dependency                'em-websocket',     '~> 0.3.5'
